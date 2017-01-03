@@ -1,0 +1,1 @@
+<a href="{devblocks_url}c=config&a=salesforce{/devblocks_url}">{'wgm.salesforce.common'|devblocks_translate}</a>

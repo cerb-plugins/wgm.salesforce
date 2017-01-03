@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.devblocks.com/schema/plugin.xsd">
+	<id>wgm.salesforce</id>
+	<name>Salesforce integration</name>
+	<description>This plugin provides integration with Salesforce via their REST API. This plugin is intended to be a bridge used by other plugins to communicate with Salesforce services.</description>
+	<author>Webgroup Media, LLC.</author>
+	<version>0.0.2</version>
+	<link>http://cerbweb.com/book/latest/developer_guide/plugins/</link>
+	<image>plugin.png</image>
+
+	<!-- Requirements -->
+
+	<requires>
+		<app_version min="7.3" max="7.3.99" />
+		<php_extension name="curl" />
+	</requires>
+
+	<!-- Plugin Dependencies -->
+	
+	<dependencies>
+		<require plugin_id="cerberusweb.core" version="6.7.0" />
+	</dependencies>
+
+	<!-- Classloader -->
+	
+	<class_loader>
+		<file path="api/App.php">
+			<class name="WgmSalesforce_API" />
+		</file>
+	</class_loader>
+
+	<!-- Extensions -->
+
+	<extensions>
+	
+		<!-- Setup Page Menu Item -->
+
+		<extension point="cerberusweb.ui.page.menu.item">
+			<id>wgmsalesforce.setup.menu.plugins.salesforce</id>
+			<name>Salesforce Plugins Menu Item</name>
+			<class>
+				<file>api/App.php</file>
+				<name>WgmSalesforce_SetupPluginsMenuItem</name>
+			</class>
+			<params>
+				<param key="page_id" value="core.page.configuration" />
+				<param key="menu_id" value="core.setup.menu.services" />
+			</params>
+		</extension>
+		
+		<!-- Setup Page Sections -->
+		
+		<extension point="cerberusweb.ui.page.section">
+			<id>wgmsalesforce.setup.salesforce</id>
+			<name>Setup Page Salesforce Section</name>
+			<class>
+				<file>api/App.php</file>
+				<name>WgmSalesforce_SetupSection</name>
+			</class>
+			<params>
+				<param key="page_id" value="core.page.configuration" />
+				<param key="uri" value="salesforce" />
+			</params>
+		</extension>
+		
+		<!-- Service Provider -->
+		
+		<extension point="cerb.service.provider">
+			<id>wgm.salesforce.service.provider</id>
+			<name>Salesforce</name>
+			<class>
+				<file>api/App.php</file>
+				<name>ServiceProvider_Salesforce</name>
+			</class>
+			<params>
+				<param key="contexts">
+					<value>
+						<data key="cerberusweb.contexts.worker" />
+					</value>
+				</param>
+			</params>
+		</extension>
+		
+	</extensions>
+</plugin>
