@@ -20,6 +20,12 @@
 	<dependencies>
 		<require plugin_id="cerberusweb.core" version="6.7.0" />
 	</dependencies>
+	
+	<!-- Patches -->
+	
+	<patches>
+		<patch version="7.3.0" revision="1" file="patches/7.3.0.php" />
+	</patches>
 
 	<!-- Classloader -->
 	
@@ -37,7 +43,7 @@
 
 		<extension point="cerberusweb.ui.page.menu.item">
 			<id>wgmsalesforce.setup.menu.plugins.salesforce</id>
-			<name>Salesforce Plugins Menu Item</name>
+			<name>Salesforce</name>
 			<class>
 				<file>api/App.php</file>
 				<name>WgmSalesforce_SetupPluginsMenuItem</name>

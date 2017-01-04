@@ -21,11 +21,8 @@ class WgmSalesforce_SetupSection extends Extension_PageSection {
 		$visit = CerberusApplication::getVisit();
 		$visit->set(ChConfigurationPage::ID, 'salesforce');
 		
-		$params = array(
-			'consumer_key' => DevblocksPlatform::getPluginSetting('wgm.salesforce','consumer_key',''),
-			'consumer_secret' => DevblocksPlatform::getPluginSetting('wgm.salesforce','consumer_secret',''),
-		);
-		$tpl->assign('params', $params);
+		$credentials = DevblocksPlatform::getPluginSetting('wgm.salesforce','credentials',false,true,true);
+		$tpl->assign('credentials', $credentials);
 		
 		// Template
 		
@@ -40,8 +37,12 @@ class WgmSalesforce_SetupSection extends Extension_PageSection {
 			if(empty($consumer_key) || empty($consumer_secret))
 				throw new Exception("Both the 'Client ID' and 'Client Secret' are required.");
 			
-			DevblocksPlatform::setPluginSetting('wgm.salesforce', 'consumer_key', $consumer_key);
-			DevblocksPlatform::setPluginSetting('wgm.salesforce', 'consumer_secret', $consumer_secret);
+			$credentials = [
+				'consumer_key' => $consumer_key,
+				'consumer_secret' => $consumer_secret,
+			];
+			
+			DevblocksPlatform::setPluginSetting('wgm.salesforce', 'credentials', $credentials, true, true);
 			
 			echo json_encode(array('status' => true, 'message' => 'Saved!'));
 			return;
@@ -141,8 +142,11 @@ class WgmSalesforce_API {
 	//private $_instance_url = null;
 	
 	private function __construct() {
-		$this->_client_id = DevblocksPlatform::getPluginSetting('wgm.salesforce','consumer_key','');
-		$this->_client_secret = DevblocksPlatform::getPluginSetting('wgm.salesforce','consumer_secret','');
+		if(false == ($credentials = DevblocksPlatform::getPluginSetting('wgm.salesforce','credentials',false,true,true)))
+			return;
+		
+		@$this->_client_id = $credentials['consumer_key'];
+		@$this->_client_secret = $credentials['consumer_secret'];
 		$this->_oauth = DevblocksPlatform::getOAuthService($this->_client_id, $this->_client_secret);
 	}
 	
@@ -175,12 +179,15 @@ class WgmSalesforce_API {
 	}
 };
 
-class ServiceProvider_Salesforce extends Extension_ServiceProvider implements IServiceProvider_OAuth {
+class ServiceProvider_Salesforce extends Extension_ServiceProvider implements IServiceProvider_OAuth, IServiceProvider_HttpRequestSigner {
 	const ID = 'wgm.salesforce.service.provider';
 
 	private function _getAppKeys() {
-		$consumer_key = DevblocksPlatform::getPluginSetting('wgm.salesforce','consumer_key','');
-		$consumer_secret = DevblocksPlatform::getPluginSetting('wgm.salesforce','consumer_secret','');
+		if(false == ($credentials = DevblocksPlatform::getPluginSetting('wgm.salesforce','credentials',false,true,true)))
+			return false;
+		
+		@$consumer_key = $credentials['consumer_key'];
+		@$consumer_secret = $credentials['consumer_secret'];
 		
 		if(empty($consumer_key) || empty($consumer_secret))
 			return false;
@@ -293,5 +300,19 @@ class ServiceProvider_Salesforce extends Extension_ServiceProvider implements IS
 		}
 		
 		echo "<script>window.close();</script>";
+	}
+	
+	function authenticateHttpRequest(Model_ConnectedAccount $account, &$ch, &$verb, &$url, &$body, &$headers) {
+		$credentials = $account->decryptParams();
+		
+		if(
+			!isset($credentials['access_token'])
+		)
+			return false;
+		
+		// Add a bearer token
+		$headers[] = sprintf('Authorization: %s %s', $credentials['token_type'], $credentials['access_token']);
+		
+		return true;
 	}
 }

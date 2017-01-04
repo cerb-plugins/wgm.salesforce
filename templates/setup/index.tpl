@@ -11,10 +11,10 @@
 	<legend>Authentication</legend>
 	
 	<b>Consumer Key:</b><br>
-	<input type="text" name="consumer_key" value="{$params.consumer_key}" size="64" spellcheck="false"><br>
+	<input type="text" name="consumer_key" value="{$credentials.consumer_key}" size="64" spellcheck="false"><br>
 	<br>
 	<b>Consumer Secret:</b><br>
-	<input type="password" name="consumer_secret" value="{$params.consumer_secret}" size="64" spellcheck="false"><br>
+	<input type="password" name="consumer_secret" value="{$credentials.consumer_secret}" size="64" spellcheck="false"><br>
 	<br>
 	<div class="status"></div>
 
