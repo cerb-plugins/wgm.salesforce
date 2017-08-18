@@ -4,7 +4,7 @@ class WgmSalesforce_SetupPluginsMenuItem extends Extension_PageMenuItem {
 	const POINT = 'wgmsalesforce.setup.menu.plugins.salesforce';
 	
 	function render() {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$tpl->assign('extension', $this);
 		$tpl->display('devblocks:wgm.salesforce::setup/menu_item.tpl');
 	}
@@ -16,7 +16,7 @@ class WgmSalesforce_SetupSection extends Extension_PageSection {
 	const ID = 'wgmsalesforce.setup.salesforce';
 	
 	function render() {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 
 		$visit = CerberusApplication::getVisit();
 		$visit->set(ChConfigurationPage::ID, 'salesforce');
@@ -147,7 +147,7 @@ class WgmSalesforce_API {
 		
 		@$this->_client_id = $credentials['consumer_key'];
 		@$this->_client_secret = $credentials['consumer_secret'];
-		$this->_oauth = DevblocksPlatform::getOAuthService($this->_client_id, $this->_client_secret);
+		$this->_oauth = DevblocksPlatform::services()->oauth($this->_client_id, $this->_client_secret);
 	}
 	
 	/**
@@ -183,7 +183,7 @@ class ServiceProvider_Salesforce extends Extension_ServiceProvider implements IS
 	const ID = 'wgm.salesforce.service.provider';
 
 	function renderConfigForm(Model_ConnectedAccount $account) {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$active_worker = CerberusApplication::getActiveWorker();
 		
 		$tpl->assign('account', $account);
@@ -198,7 +198,7 @@ class ServiceProvider_Salesforce extends Extension_ServiceProvider implements IS
 		@$edit_params = DevblocksPlatform::importGPC($_POST['params'], 'array', array());
 		
 		$active_worker = CerberusApplication::getActiveWorker();
-		$encrypt = DevblocksPlatform::getEncryptionService();
+		$encrypt = DevblocksPlatform::services()->encryption();
 		
 		// Decrypt OAuth params
 		if(isset($edit_params['params_json'])) {
@@ -233,7 +233,7 @@ class ServiceProvider_Salesforce extends Extension_ServiceProvider implements IS
 	}
 	
 	function oauthRender() {
-		$url_writer = DevblocksPlatform::getUrlService();
+		$url_writer = DevblocksPlatform::services()->url();
 		
 		@$form_id = DevblocksPlatform::importGPC($_REQUEST['form_id'], 'string', '');
 		
@@ -244,7 +244,7 @@ class ServiceProvider_Salesforce extends Extension_ServiceProvider implements IS
 		if(false == ($app_keys = $this->_getAppKeys()))
 			return false;
 		
-		$oauth = DevblocksPlatform::getOAuthService($app_keys['key'], $app_keys['secret']);
+		$oauth = DevblocksPlatform::services()->oauth($app_keys['key'], $app_keys['secret']);
 		
 		// Persist the view_id in the session
 		$_SESSION['oauth_state'] = CerberusApplication::generatePassword(24);
@@ -257,14 +257,16 @@ class ServiceProvider_Salesforce extends Extension_ServiceProvider implements IS
 			$app_keys['key'],
 			rawurlencode($redirect_url),
 			$_SESSION['oauth_state'],
-			rawurlencode('api')
+			rawurlencode('api refresh_token')
 		);
 		
 		header('Location: ' . $url);
+		exit;
 	}
 	
 	function oauthCallback() {
-		$form_id = $_SESSION['oauth_form_id'];
+		@$form_id = $_SESSION['oauth_form_id'];
+		
 		@$oauth_state = $_SESSION['oauth_state'];
 		unset($_SESSION['oauth_form_id']);
 		
@@ -274,18 +276,19 @@ class ServiceProvider_Salesforce extends Extension_ServiceProvider implements IS
 		@$error_msg = DevblocksPlatform::importGPC($_REQUEST['error_description'], 'string', '');
 		
 		$active_worker = CerberusApplication::getActiveWorker();
-		$url_writer = DevblocksPlatform::getUrlService();
-		$encrypt = DevblocksPlatform::getEncryptionService();
+		$url_writer = DevblocksPlatform::services()->url();
+		$encrypt = DevblocksPlatform::services()->encryption();
 		
 		$redirect_url = $url_writer->write(sprintf('c=oauth&a=callback&ext=%s', ServiceProvider_Salesforce::ID), true);
 		
 		if(false == ($app_keys = $this->_getAppKeys()))
 			return false;
 		
-		// [TODO] Check $error state
-		// [TODO] Compare $state
+		// Compare $state
+		if($oauth_state != $state)
+			return false;
 		
-		$oauth = DevblocksPlatform::getOAuthService($app_keys['key'], $app_keys['secret']);
+		$oauth = DevblocksPlatform::services()->oauth($app_keys['key'], $app_keys['secret']);
 		$oauth->setTokens($code);
 		
 		$params = $oauth->getAccessToken(WgmSalesforce_API::SALESFORCE_REQUEST_TOKEN_URL, array(
@@ -317,7 +320,7 @@ class ServiceProvider_Salesforce extends Extension_ServiceProvider implements IS
 			$label = $json['display_name'];
 		
 		// Output
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$tpl->assign('form_id', $form_id);
 		$tpl->assign('label', $label);
 		$tpl->assign('params_json', $encrypt->encrypt(json_encode($params)));

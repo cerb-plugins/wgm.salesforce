@@ -4,7 +4,7 @@
 	<name>Salesforce integration</name>
 	<description>This plugin provides integration with Salesforce via their REST API. This plugin is intended to be a bridge used by other plugins to communicate with Salesforce services.</description>
 	<author>Webgroup Media, LLC.</author>
-	<version>0.0.4</version>
+	<version>0.0.5</version>
 	<link>http://cerbweb.com/book/latest/developer_guide/plugins/</link>
 	<image>plugin.png</image>
 
