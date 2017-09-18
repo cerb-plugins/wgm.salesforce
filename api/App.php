@@ -179,7 +179,7 @@ class WgmSalesforce_API {
 	}
 };
 
-class ServiceProvider_Salesforce extends Extension_ServiceProvider implements IServiceProvider_OAuth, IServiceProvider_HttpRequestSigner {
+class ServiceProvider_Salesforce extends Extension_ServiceProvider implements IServiceProvider_OAuth, IServiceProvider_OAuthRefresh, IServiceProvider_HttpRequestSigner {
 	const ID = 'wgm.salesforce.service.provider';
 
 	function renderConfigForm(Model_ConnectedAccount $account) {
@@ -325,6 +325,33 @@ class ServiceProvider_Salesforce extends Extension_ServiceProvider implements IS
 		$tpl->assign('label', $label);
 		$tpl->assign('params_json', $encrypt->encrypt(json_encode($params)));
 		$tpl->display('devblocks:cerberusweb.core::internal/connected_account/oauth_callback.tpl');
+	}
+
+	function oauthRefreshAccessToken(Model_ConnectedAccount $account) {
+		$credentials = $account->decryptParams();
+		
+		if(false == ($app_keys = $this->_getAppKeys()))
+			return false;
+		
+		$oauth = DevblocksPlatform::services()->oauth($app_keys['key'], $app_keys['secret']);
+		
+		$params = $oauth->getRefreshToken(WgmSalesforce_API::SALESFORCE_REQUEST_TOKEN_URL, [
+			'grant_type' => 'refresh_token',
+			'refresh_token' => $credentials['refresh_token'],
+			'client_id' => $app_keys['key'],
+			'client_secret' => $app_keys['secret'],
+			'format' => 'json',
+		]);
+		
+		if(!$params || !is_array($params))
+			return false;
+		
+		if(isset($params['error']) && !empty($params['error']))
+			return false;
+		
+		DAO_ConnectedAccount::setAndEncryptParams($account->id, $params);
+		
+		return true;
 	}
 	
 	function authenticateHttpRequest(Model_ConnectedAccount $account, &$ch, &$verb, &$url, &$body, &$headers) {
